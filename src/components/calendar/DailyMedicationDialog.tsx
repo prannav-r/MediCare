@@ -3,7 +3,7 @@
 // Interactive sheet/dialog showing every scheduled prescription item for a date.
 // ============================================================
 
-import { Clock, Pill } from 'lucide-react'
+import { Clock, Pill, Check } from 'lucide-react'
 import type { PrescriptionItemWithMedicine } from '@/types'
 import { FIXED_SCHEDULE } from '@/types'
 import { formatTime } from '@/lib/utils'
@@ -46,6 +46,13 @@ export function DailyMedicationDialog({
 
   const totalTablets = morningItems.length + afternoonItems.length + eveningItems.length
 
+  const todayStr = new Date().toISOString().split('T')[0]
+  const isPast = dateStr < todayStr
+  const isToday = dateStr === todayStr
+  
+  const now = new Date()
+  const currentHourMinute = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[88vh] overflow-y-auto">
@@ -70,18 +77,21 @@ export function DailyMedicationDialog({
               time={FIXED_SCHEDULE.morning}
               items={morningItems}
               badgeClassName="bg-amber-500/15 text-amber-700 dark:text-amber-300"
+              isTaken={isPast || (isToday && currentHourMinute >= FIXED_SCHEDULE.morning)}
             />
             <TimingSectionColumn
               title="☀️ Afternoon"
               time={FIXED_SCHEDULE.afternoon}
               items={afternoonItems}
               badgeClassName="bg-blue-500/15 text-blue-700 dark:text-blue-300"
+              isTaken={isPast || (isToday && currentHourMinute >= FIXED_SCHEDULE.afternoon)}
             />
             <TimingSectionColumn
               title="🌙 Evening"
               time={FIXED_SCHEDULE.evening}
               items={eveningItems}
               badgeClassName="bg-purple-500/15 text-purple-700 dark:text-purple-300"
+              isTaken={isPast || (isToday && currentHourMinute >= FIXED_SCHEDULE.evening)}
             />
           </div>
         )}
@@ -95,11 +105,13 @@ function TimingSectionColumn({
   time,
   items,
   badgeClassName,
+  isTaken,
 }: {
   title: string
   time: string
   items: PrescriptionItemWithMedicine[]
   badgeClassName: string
+  isTaken: boolean
 }) {
   return (
     <div className="flex flex-col space-y-3 rounded-xl border border-border bg-muted/20 p-3">
@@ -122,15 +134,23 @@ function TimingSectionColumn({
           items.map((item) => (
             <div
               key={item.id}
-              className="p-2.5 rounded-md border border-border/50 bg-card/40 flex flex-col gap-1.5"
+              className="p-2.5 rounded-md border border-border/50 bg-card/40 flex items-center justify-between gap-1.5"
             >
-              <h4 className="font-semibold text-xs sm:text-sm">
-                {item.medicine.medicine_name}
-              </h4>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
-                <Clock className="h-3.5 w-3.5 text-primary" />
-                <span>{formatTime(time)}</span>
+              <div>
+                <h4 className="font-semibold text-xs sm:text-sm">
+                  {item.medicine.medicine_name}
+                </h4>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5 shrink-0">
+                  <Clock className="h-3.5 w-3.5 text-primary" />
+                  <span>{formatTime(time)}</span>
+                </div>
               </div>
+              
+              {isTaken && (
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 shrink-0" title="Taken">
+                  <Check className="h-3.5 w-3.5 stroke-[3]" />
+                </div>
+              )}
             </div>
           ))
         )}

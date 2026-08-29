@@ -6,7 +6,7 @@
 
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, Clock, FileText, PlusCircle, Pill } from 'lucide-react'
+import { AlertTriangle, Clock, FileText, PlusCircle, Pill, Check } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useAllActivePrescriptionItems } from '@/hooks/usePrescriptionItems'
@@ -92,6 +92,9 @@ export function DashboardPage() {
   }, [activeItems])
 
   const isLoading = prescLoading || itemsLoading || invLoading
+
+  const now = new Date()
+  const currentHourMinute = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 
   return (
     <AppLayout>
@@ -215,23 +218,52 @@ export function DashboardPage() {
                 </Link>
               </div>
             ) : (
-              <div className="space-y-6">
-                {todaySchedule.map((group) => (
+              <div className="space-y-8">
+                {todaySchedule.map((group) => {
+                  const isTaken = currentHourMinute >= group.time
+                  return (
                   <div key={group.label} className="space-y-3">
                     <div className="flex items-center gap-2 border-b pb-2">
                       <Clock className="h-4 w-4 text-primary" />
                       <h3 className="font-semibold">{group.label} — {formatTime(group.time)}</h3>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {group.items.map(item => (
-                        <div key={item.id} className="p-3 bg-muted/30 rounded-lg border flex items-center justify-between">
-                          <span className="font-medium">{item.medicine.medicine_name}</span>
-                        </div>
-                      ))}
+                    <div className="rounded-md border border-border bg-card overflow-hidden">
+                      <table className="w-full text-sm text-left">
+                        <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] font-semibold tracking-wider">
+                          <tr>
+                            <th className="px-4 py-2.5 w-16 text-center">Status</th>
+                            <th className="px-4 py-2.5">Medication</th>
+                            <th className="px-4 py-2.5 w-24">Dose</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {group.items.map(item => (
+                            <tr key={item.id} className="hover:bg-muted/10 transition-colors">
+                              <td className="px-4 py-2 text-center align-middle">
+                                {isTaken ? (
+                                  <div className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600">
+                                    <Check className="h-4 w-4 stroke-[3]" />
+                                  </div>
+                                ) : (
+                                  <div className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-muted/50 text-muted-foreground" title="Pending">
+                                    <Clock className="h-3.5 w-3.5" />
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-4 py-2 font-medium">
+                                {item.medicine.medicine_name}
+                              </td>
+                              <td className="px-4 py-2 text-muted-foreground text-xs font-medium">
+                                {item.quantity_per_dose} {item.quantity_per_dose === 1 ? 'dose' : 'doses'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
-                ))}
+                )})}
               </div>
             )}
           </CardContent>
