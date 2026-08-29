@@ -1,5 +1,7 @@
 # MediCare
 
+**[🚀 View Live Demo on Vercel](https://medi-care-one-orcin.vercel.app/)**
+
 MediCare is a modern, responsive web application designed to help users seamlessly manage their medical prescriptions, track daily medication schedules, and automatically manage medicine inventory. 
 
 ## Features
