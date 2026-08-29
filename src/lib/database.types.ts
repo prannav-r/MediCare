@@ -1,6 +1,6 @@
 // ============================================================
 // src/lib/database.types.ts
-// TypeScript representation of our Supabase PostgreSQL schema.
+// TypeScript representation of our Supabase PostgreSQL schema (MVP 3).
 // Formatted for @supabase/supabase-js v2.x
 // ============================================================
 
@@ -15,31 +15,37 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      profiles: {
+      medicines: {
         Row: {
           id: string
-          user_id: string
-          breakfast_time: string
-          lunch_time: string
-          dinner_time: string
+          medicine_name: string
+          generic_name: string | null
+          brand_name: string | null
+          strength: string | null
+          dosage_form: string | null
+          manufacturer: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          user_id: string
-          breakfast_time?: string
-          lunch_time?: string
-          dinner_time?: string
+          medicine_name: string
+          generic_name?: string | null
+          brand_name?: string | null
+          strength?: string | null
+          dosage_form?: string | null
+          manufacturer?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
-          user_id?: string
-          breakfast_time?: string
-          lunch_time?: string
-          dinner_time?: string
+          medicine_name?: string
+          generic_name?: string | null
+          brand_name?: string | null
+          strength?: string | null
+          dosage_form?: string | null
+          manufacturer?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -50,12 +56,9 @@ export type Database = {
           id: string
           user_id: string
           title: string
-          doctor_name: string
-          hospital_name: string
-          description: string | null
+          doctor_name: string | null
           start_date: string
           end_date: string
-          status: 'active' | 'completed' | 'cancelled'
           created_at: string
           updated_at: string
         }
@@ -63,12 +66,9 @@ export type Database = {
           id?: string
           user_id: string
           title: string
-          doctor_name: string
-          hospital_name: string
-          description?: string | null
+          doctor_name?: string | null
           start_date: string
           end_date: string
-          status?: 'active' | 'completed' | 'cancelled'
           created_at?: string
           updated_at?: string
         }
@@ -76,54 +76,9 @@ export type Database = {
           id?: string
           user_id?: string
           title?: string
-          doctor_name?: string
-          hospital_name?: string
-          description?: string | null
+          doctor_name?: string | null
           start_date?: string
           end_date?: string
-          status?: 'active' | 'completed' | 'cancelled'
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      medicine_catalog: {
-        Row: {
-          id: string
-          external_id: string | null
-          medicine_name: string
-          generic_name: string | null
-          brand_name: string | null
-          strength: string | null
-          dosage_form: string | null
-          manufacturer: string | null
-          source: 'manual' | 'external_api' | 'ocr'
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          external_id?: string | null
-          medicine_name: string
-          generic_name?: string | null
-          brand_name?: string | null
-          strength?: string | null
-          dosage_form?: string | null
-          manufacturer?: string | null
-          source?: 'manual' | 'external_api' | 'ocr'
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          external_id?: string | null
-          medicine_name?: string
-          generic_name?: string | null
-          brand_name?: string | null
-          strength?: string | null
-          dosage_form?: string | null
-          manufacturer?: string | null
-          source?: 'manual' | 'external_api' | 'ocr'
           created_at?: string
           updated_at?: string
         }
@@ -134,16 +89,10 @@ export type Database = {
           id: string
           prescription_id: string
           medicine_id: string
-          dosage: string
-          meal_type: 'breakfast' | 'lunch' | 'dinner'
-          meal_types: ('breakfast' | 'lunch' | 'dinner')[]
-          food_relation: 'before_food' | 'after_food' | 'with_food' | 'anytime'
-          custom_time: string | null
-          daily_frequency: number
-          quantity_per_dose: number
-          total_quantity_prescribed: number
-          remaining_stock: number
-          notes: string | null
+          morning: boolean
+          afternoon: boolean
+          evening: boolean
+          total_required_doses: number
           created_at: string
           updated_at: string
         }
@@ -151,16 +100,10 @@ export type Database = {
           id?: string
           prescription_id: string
           medicine_id: string
-          dosage: string
-          meal_type: 'breakfast' | 'lunch' | 'dinner'
-          meal_types?: ('breakfast' | 'lunch' | 'dinner')[]
-          food_relation: 'before_food' | 'after_food' | 'with_food' | 'anytime'
-          custom_time?: string | null
-          daily_frequency?: number
-          quantity_per_dose?: number
-          total_quantity_prescribed?: number
-          remaining_stock?: number
-          notes?: string | null
+          morning?: boolean
+          afternoon?: boolean
+          evening?: boolean
+          total_required_doses?: number
           created_at?: string
           updated_at?: string
         }
@@ -168,16 +111,10 @@ export type Database = {
           id?: string
           prescription_id?: string
           medicine_id?: string
-          dosage?: string
-          meal_type?: 'breakfast' | 'lunch' | 'dinner'
-          meal_types?: ('breakfast' | 'lunch' | 'dinner')[]
-          food_relation?: 'before_food' | 'after_food' | 'with_food' | 'anytime'
-          custom_time?: string | null
-          daily_frequency?: number
-          quantity_per_dose?: number
-          total_quantity_prescribed?: number
-          remaining_stock?: number
-          notes?: string | null
+          morning?: boolean
+          afternoon?: boolean
+          evening?: boolean
+          total_required_doses?: number
           created_at?: string
           updated_at?: string
         }
@@ -193,54 +130,42 @@ export type Database = {
             foreignKeyName: "prescription_items_medicine_id_fkey"
             columns: ["medicine_id"]
             isOneToOne: false
-            referencedRelation: "medicine_catalog"
+            referencedRelation: "medicines"
             referencedColumns: ["id"]
           }
         ]
       }
-      medication_logs: {
+      medicine_inventory: {
         Row: {
           id: string
           user_id: string
-          prescription_item_id: string
-          scheduled_date: string
-          scheduled_time: string
-          status: 'pending' | 'taken' | 'missed' | 'skipped'
-          taken_at: string | null
-          notes: string | null
+          medicine_id: string
+          current_doses: number
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           user_id: string
-          prescription_item_id: string
-          scheduled_date: string
-          scheduled_time: string
-          status?: 'pending' | 'taken' | 'missed' | 'skipped'
-          taken_at?: string | null
-          notes?: string | null
+          medicine_id: string
+          current_doses?: number
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           user_id?: string
-          prescription_item_id?: string
-          scheduled_date?: string
-          scheduled_time?: string
-          status?: 'pending' | 'taken' | 'missed' | 'skipped'
-          taken_at?: string | null
-          notes?: string | null
+          medicine_id?: string
+          current_doses?: number
           created_at?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "medication_logs_prescription_item_id_fkey"
-            columns: ["prescription_item_id"]
+            foreignKeyName: "medicine_inventory_medicine_id_fkey"
+            columns: ["medicine_id"]
             isOneToOne: false
-            referencedRelation: "prescription_items"
+            referencedRelation: "medicines"
             referencedColumns: ["id"]
           }
         ]
@@ -253,10 +178,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      prescription_status_enum: 'active' | 'completed' | 'cancelled'
-      meal_type_enum: 'breakfast' | 'lunch' | 'dinner'
-      food_relation_enum: 'before_food' | 'after_food' | 'with_food' | 'anytime'
-      log_status_enum: 'pending' | 'taken' | 'missed' | 'skipped'
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never

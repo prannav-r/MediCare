@@ -15,8 +15,8 @@ import { toast } from 'sonner'
 import {
   useCreateManualMedicine,
   useSearchMedicineCatalog,
-} from '@/hooks/useMedicineCatalog'
-import type { MedicineCatalogItem } from '@/types'
+} from '@/hooks/useMedicineSearch'
+import type { Medicine } from '@/types'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -32,7 +32,7 @@ import { cn } from '@/lib/utils'
 
 interface MedicineSearchComboboxProps {
   value: string // selected medicine_id
-  onSelectMedicine: (medicine: MedicineCatalogItem) => void
+  onSelectMedicine: (medicine: Medicine) => void
   selectedMedicineName?: string
 }
 
@@ -63,8 +63,8 @@ export function MedicineSearchCombobox({
     try {
       const created = await createMedicine({
         medicine_name: manualName.trim(),
-        generic_name: manualGeneric.trim() || null,
-        strength: manualStrength.trim() || null,
+        generic_name: manualGeneric.trim() || undefined,
+        strength: manualStrength.trim() || undefined,
       })
 
       onSelectMedicine(created)

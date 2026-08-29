@@ -1,31 +1,17 @@
 // ============================================================
 // src/pages/Calendar/index.tsx
-// Interactive monthly calendar tracking page (Refactored for Prescription Domain).
+// Interactive monthly calendar tracking schedule for MVP 3.
 // ============================================================
 
 import { useMemo, useState } from 'react'
-import {
-  Calendar as CalendarIcon,
-  ChevronLeft,
-  ChevronRight,
-  Filter,
-} from 'lucide-react'
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
-import { useLogsByDateRange } from '@/hooks/useMedicationLogs'
 import { useAllActivePrescriptionItems } from '@/hooks/usePrescriptionItems'
-import { useProfile } from '@/hooks/useProfile'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DailyMedicationDialog } from '@/components/calendar/DailyMedicationDialog'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 
 function formatLocalDate(d: Date): string {
@@ -38,56 +24,19 @@ function formatLocalDate(d: Date): string {
 export function CalendarPage() {
   const { user } = useAuth()
   const { data: allItems = [] } = useAllActivePrescriptionItems(user?.id)
-  const { data: profile } = useProfile()
 
   const [currentDate, setCurrentDate] = useState(() => {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), 1)
   })
 
-  const [mealFilter, setMealFilter] = useState<string>('all')
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null)
-
-  const activeItems = useMemo(() => {
-    if (mealFilter === 'all') return allItems
-    return allItems.filter((item) => item.meal_type === mealFilter)
-  }, [allItems, mealFilter])
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
 
   const firstDayOfMonth = new Date(year, month, 1)
   const lastDayOfMonth = new Date(year, month + 1, 0)
-
-  const startDateStr = formatLocalDate(firstDayOfMonth)
-  const endDateStr = formatLocalDate(lastDayOfMonth)
-
-  const { data: monthlyLogs = [] } = useLogsByDateRange(
-    user?.id,
-    startDateStr,
-    endDateStr
-  )
-
-  const logsByDate = useMemo(() => {
-    const map = new Map<
-      string,
-      { takenCount: number; missedCount: number; totalLogged: number }
-    >()
-
-    for (const log of monthlyLogs) {
-      const current = map.get(log.scheduled_date) || {
-        takenCount: 0,
-        missedCount: 0,
-        totalLogged: 0,
-      }
-      current.totalLogged++
-      if (log.status === 'taken') current.takenCount++
-      if (log.status === 'missed') current.missedCount++
-      map.set(log.scheduled_date, current)
-    }
-
-    return map
-  }, [monthlyLogs])
 
   const todayStr = useMemo(() => formatLocalDate(new Date()), [])
 
@@ -96,13 +45,8 @@ export function CalendarPage() {
     year: 'numeric',
   })
 
-  const handlePrevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1))
-  }
-
-  const handleNextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1))
-  }
+  const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1, 1))
+  const handleNextMonth = () => setCurrentDate(new Date(year, month + 1, 1))
 
   const calendarDays = useMemo(() => {
     const startDayOfWeek = firstDayOfMonth.getDay()
@@ -120,38 +64,20 @@ export function CalendarPage() {
     for (let i = startDayOfWeek - 1; i >= 0; i--) {
       const d = new Date(year, month - 1, prevMonthLastDate - i)
       const dateStr = formatLocalDate(d)
-      days.push({
-        date: d,
-        dateStr,
-        dayNum: prevMonthLastDate - i,
-        isCurrentMonth: false,
-        isToday: dateStr === todayStr,
-      })
+      days.push({ date: d, dateStr, dayNum: prevMonthLastDate - i, isCurrentMonth: false, isToday: dateStr === todayStr })
     }
 
     for (let i = 1; i <= totalDaysInMonth; i++) {
       const d = new Date(year, month, i)
       const dateStr = formatLocalDate(d)
-      days.push({
-        date: d,
-        dateStr,
-        dayNum: i,
-        isCurrentMonth: true,
-        isToday: dateStr === todayStr,
-      })
+      days.push({ date: d, dateStr, dayNum: i, isCurrentMonth: true, isToday: dateStr === todayStr })
     }
 
     const remainingSlots = 42 - days.length
     for (let i = 1; i <= remainingSlots; i++) {
       const d = new Date(year, month + 1, i)
       const dateStr = formatLocalDate(d)
-      days.push({
-        date: d,
-        dateStr,
-        dayNum: i,
-        isCurrentMonth: false,
-        isToday: dateStr === todayStr,
-      })
+      days.push({ date: d, dateStr, dayNum: i, isCurrentMonth: false, isToday: dateStr === todayStr })
     }
 
     return days
@@ -165,45 +91,22 @@ export function CalendarPage() {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <CalendarIcon className="h-6 w-6 text-primary" />
-              Medication Schedule Calendar
+              Medication Schedule
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Click any date to view and log your prescribed daily medicines
+              Click any date to view your scheduled medicines
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <Select value={mealFilter} onValueChange={setMealFilter}>
-              <SelectTrigger className="w-[160px] h-9 text-xs">
-                <Filter className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-                <SelectValue placeholder="Filter Meal" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Meals</SelectItem>
-                <SelectItem value="breakfast">🌅 Breakfast</SelectItem>
-                <SelectItem value="lunch">☀️ Lunch</SelectItem>
-                <SelectItem value="dinner">🌙 Dinner</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="flex items-center border rounded-md">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9"
-                onClick={handlePrevMonth}
-              >
+            <div className="flex items-center border rounded-md bg-background">
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handlePrevMonth}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="px-3 text-sm font-semibold min-w-[140px] text-center">
                 {monthName}
               </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9"
-                onClick={handleNextMonth}
-              >
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleNextMonth}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -224,29 +127,19 @@ export function CalendarPage() {
 
           <div className="grid grid-cols-7 gap-1 sm:gap-2 pt-2">
             {calendarDays.map((cell) => {
-              const stats = logsByDate.get(cell.dateStr)
-              const validItemsForDay = activeItems.filter((item) => {
-                if (!item.prescription) return true
-                if (item.prescription.status !== 'active') return false
+              const validItemsForDay = allItems.filter((item) => {
+                if (!item.prescription) return false
                 return (
                   cell.dateStr >= item.prescription.start_date &&
                   cell.dateStr <= item.prescription.end_date
                 )
               })
-              const scheduledCount = validItemsForDay.reduce((acc, item) => {
-                const meals =
-                  item.meal_types && item.meal_types.length > 0
-                    ? item.meal_types
-                    : [item.meal_type]
-                return acc + meals.length
-              }, 0)
-
-              const hasAllCompleted =
-                scheduledCount > 0 &&
-                stats &&
-                stats.takenCount >= scheduledCount
-              const hasMissed = stats && stats.missedCount > 0
-
+              
+              const hasMorning = validItemsForDay.some(i => i.morning)
+              const hasAfternoon = validItemsForDay.some(i => i.afternoon)
+              const hasEvening = validItemsForDay.some(i => i.evening)
+              const totalDots = (hasMorning ? 1 : 0) + (hasAfternoon ? 1 : 0) + (hasEvening ? 1 : 0)
+              
               return (
                 <button
                   key={cell.dateStr}
@@ -269,28 +162,13 @@ export function CalendarPage() {
                     >
                       {cell.dayNum}
                     </span>
-
-                    <div className="flex gap-1">
-                      {hasAllCompleted && (
-                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                      )}
-                      {hasMissed && (
-                        <span className="h-2 w-2 rounded-full bg-destructive" />
-                      )}
-                    </div>
                   </div>
 
-                  {scheduledCount > 0 && (
-                    <div className="mt-auto pt-2">
-                      {hasAllCompleted ? (
-                        <div className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1">
-                          ✓ All Taken
-                        </div>
-                      ) : (
-                        <div className="text-[11px] font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded inline-block">
-                          Pending
-                        </div>
-                      )}
+                  {totalDots > 0 && (
+                    <div className="mt-auto pt-2 flex flex-wrap gap-1">
+                      {hasMorning && <span className="h-2 w-2 rounded-full bg-amber-500" title="Morning" />}
+                      {hasAfternoon && <span className="h-2 w-2 rounded-full bg-blue-500" title="Afternoon" />}
+                      {hasEvening && <span className="h-2 w-2 rounded-full bg-purple-500" title="Evening" />}
                     </div>
                   )}
                 </button>
@@ -306,12 +184,16 @@ export function CalendarPage() {
             <span>Today</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-            <span>All completed</span>
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+            <span>Morning</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-destructive" />
-            <span>Missed dose(s)</span>
+            <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+            <span>Afternoon</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-purple-500" />
+            <span>Evening</span>
           </div>
         </div>
       </div>
@@ -323,8 +205,7 @@ export function CalendarPage() {
             if (!open) setSelectedDateStr(null)
           }}
           dateStr={selectedDateStr}
-          items={activeItems}
-          profile={profile ?? null}
+          items={allItems}
         />
       )}
     </AppLayout>

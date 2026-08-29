@@ -1,6 +1,6 @@
 // ============================================================
 // src/services/prescriptionItemService.ts
-// Service layer for Prescription Items (joining medicine catalog & parent prescription).
+// Service layer for Prescription Items (MVP 3)
 // ============================================================
 
 import { supabase } from '@/lib/supabase'
@@ -14,7 +14,7 @@ export const prescriptionItemService = {
   ): Promise<PrescriptionItemWithMedicine[]> {
     const { data, error } = await supabase
       .from('prescription_items')
-      .select('*, medicine:medicine_catalog(*), prescription:prescriptions(*)')
+      .select('*, medicine:medicines(*), prescription:prescriptions(*)')
       .eq('prescription_id', prescriptionId)
       .order('created_at', { ascending: true })
 
@@ -26,11 +26,13 @@ export const prescriptionItemService = {
   async getAllActiveItemsForUser(
     userId: string
   ): Promise<PrescriptionItemWithMedicine[]> {
+    const today = new Date().toISOString().split('T')[0]
     const { data, error } = await supabase
       .from('prescription_items')
-      .select('*, medicine:medicine_catalog(*), prescription:prescriptions!inner(*)')
+      .select('*, medicine:medicines(*), prescription:prescriptions!inner(*)')
       .eq('prescription.user_id', userId)
-      .eq('prescription.status', 'active')
+      .lte('prescription.start_date', today)
+      .gte('prescription.end_date', today)
 
     if (error) throw error
     return (data as unknown as PrescriptionItemWithMedicine[]) ?? []
@@ -40,7 +42,7 @@ export const prescriptionItemService = {
   async getItemById(id: string): Promise<PrescriptionItemWithMedicine> {
     const { data, error } = await supabase
       .from('prescription_items')
-      .select('*, medicine:medicine_catalog(*), prescription:prescriptions(*)')
+      .select('*, medicine:medicines(*), prescription:prescriptions(*)')
       .eq('id', id)
       .single()
 
@@ -51,49 +53,25 @@ export const prescriptionItemService = {
   // ── 4. Add Item to Prescription ───────────────────────────────
   async createItem(
     prescriptionId: string,
-    formData: PrescriptionItemFormData
+    formData: PrescriptionItemFormData,
+    totalRequiredDoses: number
   ): Promise<PrescriptionItem> {
-    const basePayload = {
+    const payload = {
       prescription_id: prescriptionId,
       medicine_id: formData.medicine_id,
-      dosage: formData.dosage.trim(),
-      meal_type: (formData.meal_types && formData.meal_types[0]) || formData.meal_type,
-      food_relation: formData.food_relation,
-      custom_time: formData.food_relation === 'anytime' ? formData.custom_time ?? null : null,
-      daily_frequency: formData.daily_frequency,
-      quantity_per_dose: formData.quantity_per_dose,
-      remaining_stock: formData.remaining_stock,
-      notes: formData.notes?.trim() ?? null,
-    }
-
-    const fullPayload = {
-      ...basePayload,
-      meal_types: formData.meal_types && formData.meal_types.length > 0 ? formData.meal_types : [formData.meal_type],
-      total_quantity_prescribed: formData.remaining_stock,
+      morning: formData.morning,
+      afternoon: formData.afternoon,
+      evening: formData.evening,
+      total_required_doses: totalRequiredDoses,
     }
 
     const { data, error } = await supabase
       .from('prescription_items')
-      .insert(fullPayload)
+      .insert(payload)
       .select()
       .single()
 
     if (error) {
-      if (error.code === 'PGRST204' || error.message?.includes('column')) {
-        console.warn('DB schema missing column, retrying insert with base payload:', error.message)
-        const { data: retryData, error: retryError } = await supabase
-          .from('prescription_items')
-          .insert(basePayload)
-          .select()
-          .single()
-
-        if (retryError) {
-          console.error('Supabase error creating item (retry):', retryError)
-          throw new Error(retryError.message || 'Failed to add medicine item')
-        }
-        return retryData as PrescriptionItem
-      }
-
       console.error('Supabase error creating item:', error)
       throw new Error(error.message || 'Failed to add medicine item')
     }
@@ -104,49 +82,25 @@ export const prescriptionItemService = {
   // ── 5. Update Prescription Item ───────────────────────────────
   async updateItem(
     id: string,
-    formData: PrescriptionItemFormData
+    formData: PrescriptionItemFormData,
+    totalRequiredDoses: number
   ): Promise<PrescriptionItem> {
-    const basePayload = {
+    const payload = {
       medicine_id: formData.medicine_id,
-      dosage: formData.dosage.trim(),
-      meal_type: (formData.meal_types && formData.meal_types[0]) || formData.meal_type,
-      food_relation: formData.food_relation,
-      custom_time: formData.food_relation === 'anytime' ? formData.custom_time ?? null : null,
-      daily_frequency: formData.daily_frequency,
-      quantity_per_dose: formData.quantity_per_dose,
-      remaining_stock: formData.remaining_stock,
-      notes: formData.notes?.trim() ?? null,
-    }
-
-    const fullPayload = {
-      ...basePayload,
-      meal_types: formData.meal_types && formData.meal_types.length > 0 ? formData.meal_types : [formData.meal_type],
+      morning: formData.morning,
+      afternoon: formData.afternoon,
+      evening: formData.evening,
+      total_required_doses: totalRequiredDoses,
     }
 
     const { data, error } = await supabase
       .from('prescription_items')
-      .update(fullPayload)
+      .update(payload)
       .eq('id', id)
       .select()
       .single()
 
     if (error) {
-      if (error.code === 'PGRST204' || error.message?.includes('column')) {
-        console.warn('DB schema missing column, retrying update with base payload:', error.message)
-        const { data: retryData, error: retryError } = await supabase
-          .from('prescription_items')
-          .update(basePayload)
-          .eq('id', id)
-          .select()
-          .single()
-
-        if (retryError) {
-          console.error('Supabase error updating item (retry):', retryError)
-          throw new Error(retryError.message || 'Failed to update medicine item')
-        }
-        return retryData as PrescriptionItem
-      }
-
       console.error('Supabase error updating item:', error)
       throw new Error(error.message || 'Failed to update medicine item')
     }

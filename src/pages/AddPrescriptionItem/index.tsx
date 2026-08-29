@@ -7,9 +7,13 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Pill } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { useAuth } from '@/contexts/AuthContext'
 import { useCreatePrescriptionItem } from '@/hooks/usePrescriptionItems'
 import { usePrescription } from '@/hooks/usePrescriptions'
+import { useSetInventory } from '@/hooks/useInventory'
+import { calculateRequiredDoses } from '@/utils/doseCalculator'
 import type { PrescriptionItemFormData } from '@/schemas'
+
 import { AppLayout } from '@/components/layout/AppLayout'
 import { PrescriptionItemForm } from '@/components/prescription/PrescriptionItemForm'
 import { Button } from '@/components/ui/button'
@@ -18,16 +22,44 @@ import { Card } from '@/components/ui/card'
 export function AddPrescriptionItemPage() {
   const { id: prescriptionId } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   const { data: prescription } = usePrescription(prescriptionId)
-  const { mutateAsync: createItem, isPending } = useCreatePrescriptionItem()
+  const { mutateAsync: createItem, isPending: creatingItem } = useCreatePrescriptionItem()
+  const { mutateAsync: setInventory, isPending: settingInventory } = useSetInventory()
+
+  const isPending = creatingItem || settingInventory
 
   const handleSubmit = async (formData: PrescriptionItemFormData) => {
+    if (!prescription) {
+      toast.error('Prescription data not loaded')
+      return
+    }
+
     try {
+      // Calculate total required doses for the course
+      const { totalRequired } = calculateRequiredDoses(
+        prescription.start_date,
+        prescription.end_date,
+        formData.morning,
+        formData.afternoon,
+        formData.evening
+      )
+
+      // Set inventory level (since inventory is cross-prescription, this overwrites it for the user+medicine)
+      await setInventory({
+        userId: user!.id,
+        medicineId: formData.medicine_id,
+        currentDoses: formData.current_doses,
+      })
+
+      // Add the item to the prescription
       await createItem({
         prescriptionId: prescriptionId!,
         formData,
+        totalRequiredDoses: totalRequired,
       })
+
       toast.success('Medicine item added to prescription')
       navigate(`/prescriptions/${prescriptionId}`)
     } catch (err: any) {

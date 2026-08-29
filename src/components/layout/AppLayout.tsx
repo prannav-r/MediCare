@@ -5,7 +5,7 @@
 // ============================================================
 
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Pill, LayoutDashboard, User, LogOut, Menu, X, Calendar, BarChart3, FileText } from 'lucide-react'
+import { Pill, LayoutDashboard, LogOut, Menu, X, Calendar, FileText } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
@@ -16,8 +16,6 @@ const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/prescriptions', label: 'Prescriptions', icon: FileText },
   { to: '/calendar', label: 'Calendar', icon: Calendar },
-  { to: '/insights', label: 'Insights', icon: BarChart3 },
-  { to: '/profile', label: 'Meal Timings', icon: User },
 ]
 
 export function AppLayout({ children }: { children: React.ReactNode }) {

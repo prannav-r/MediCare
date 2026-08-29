@@ -1,6 +1,6 @@
 // ============================================================
 // src/hooks/usePrescriptionItems.ts
-// TanStack Query hooks for Prescription Items.
+// TanStack Query hooks for Prescription Items (MVP 3)
 // ============================================================
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -54,10 +54,12 @@ export function useCreatePrescriptionItem() {
     mutationFn: ({
       prescriptionId,
       formData,
+      totalRequiredDoses,
     }: {
       prescriptionId: string
       formData: PrescriptionItemFormData
-    }) => prescriptionItemService.createItem(prescriptionId, formData),
+      totalRequiredDoses: number
+    }) => prescriptionItemService.createItem(prescriptionId, formData, totalRequiredDoses),
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: prescriptionItemKeys.all })
       void queryClient.invalidateQueries({
@@ -74,10 +76,12 @@ export function useUpdatePrescriptionItem() {
     mutationFn: ({
       id,
       formData,
+      totalRequiredDoses,
     }: {
       id: string
       formData: PrescriptionItemFormData
-    }) => prescriptionItemService.updateItem(id, formData),
+      totalRequiredDoses: number
+    }) => prescriptionItemService.updateItem(id, formData, totalRequiredDoses),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: prescriptionItemKeys.all })
     },

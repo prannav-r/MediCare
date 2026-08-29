@@ -42,12 +42,9 @@ export const prescriptionService = {
       .insert({
         user_id: userId,
         title: formData.title.trim(),
-        doctor_name: formData.doctor_name.trim(),
-        hospital_name: formData.hospital_name.trim(),
-        description: formData.description?.trim() ?? null,
+        doctor_name: formData.doctor_name?.trim() ?? null,
         start_date: formData.start_date,
         end_date: formData.end_date,
-        status: formData.status ?? 'active',
       })
       .select()
       .single()
@@ -65,12 +62,9 @@ export const prescriptionService = {
       .from('prescriptions')
       .update({
         title: formData.title.trim(),
-        doctor_name: formData.doctor_name.trim(),
-        hospital_name: formData.hospital_name.trim(),
-        description: formData.description?.trim() ?? null,
+        doctor_name: formData.doctor_name?.trim() ?? null,
         start_date: formData.start_date,
         end_date: formData.end_date,
-        status: formData.status,
       })
       .eq('id', id)
       .select()

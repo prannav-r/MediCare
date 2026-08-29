@@ -64,11 +64,8 @@ export function EditPrescriptionPage() {
               defaultValues={{
                 title: prescription.title,
                 doctor_name: prescription.doctor_name,
-                hospital_name: prescription.hospital_name,
-                description: prescription.description ?? undefined,
                 start_date: prescription.start_date,
                 end_date: prescription.end_date,
-                status: prescription.status,
               }}
               onSubmit={handleSubmit}
               isLoading={isPending}

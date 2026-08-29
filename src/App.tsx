@@ -1,6 +1,6 @@
 // ============================================================
 // src/App.tsx
-// Root component — providers + routing for MediCare (Prescription Domain Model).
+// Root component — providers + routing for MediCare (MVP 3)
 // ============================================================
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -14,9 +14,7 @@ import { ProtectedRoute, PublicRoute } from '@/routes/ProtectedRoute'
 import { LoginPage } from '@/pages/Login'
 import { RegisterPage } from '@/pages/Register'
 import { DashboardPage } from '@/pages/Dashboard'
-import { ProfilePage } from '@/pages/Profile'
 import { CalendarPage } from '@/pages/Calendar'
-import { InsightsPage } from '@/pages/Insights'
 
 // Prescription Domain Pages
 import { PrescriptionsPage } from '@/pages/Prescriptions'
@@ -25,11 +23,6 @@ import { EditPrescriptionPage } from '@/pages/EditPrescription'
 import { PrescriptionDetailsPage } from '@/pages/PrescriptionDetails'
 import { AddPrescriptionItemPage } from '@/pages/AddPrescriptionItem'
 import { EditPrescriptionItemPage } from '@/pages/EditPrescriptionItem'
-
-// Legacy pages kept as redirects or fallback
-import { MedicinesPage } from '@/pages/Medicines'
-import { AddMedicinePage } from '@/pages/AddMedicine'
-import { EditMedicinePage } from '@/pages/EditMedicine'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -86,23 +79,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/insights"
-              element={
-                <ProtectedRoute>
-                  <InsightsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              }
-            />
-
             {/* ── Prescription Domain Routes ── */}
             <Route
               path="/prescriptions"
@@ -149,32 +125,6 @@ function App() {
               element={
                 <ProtectedRoute>
                   <EditPrescriptionItemPage />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* ── Legacy Routes Compatibility ── */}
-            <Route
-              path="/medicines"
-              element={
-                <ProtectedRoute>
-                  <MedicinesPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/medicines/new"
-              element={
-                <ProtectedRoute>
-                  <AddMedicinePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/medicines/:id/edit"
-              element={
-                <ProtectedRoute>
-                  <EditMedicinePage />
                 </ProtectedRoute>
               }
             />

@@ -1,44 +1,62 @@
 // ============================================================
 // src/services/medicineService.ts
-// Compatibility shim mapping legacy Medicine calls to Prescription Items.
+// Service layer for Medicine Catalog.
 // ============================================================
 
-import { prescriptionItemService } from './prescriptionItemService'
+import { supabase } from '@/lib/supabase'
 import type { Medicine } from '@/types'
+import type { MedicineCatalogFormData } from '@/schemas'
 
 export const medicineService = {
-  async getMedicines(userId: string): Promise<Medicine[]> {
-    const items = await prescriptionItemService.getAllActiveItemsForUser(userId)
-    return items.map((item) => ({
-      id: item.id,
-      user_id: userId,
-      medicine_name: item.medicine?.medicine_name ?? 'Unknown Medicine',
-      dosage: item.dosage,
-      meal_type: item.meal_type,
-      food_relation: item.food_relation,
-      custom_time: item.custom_time,
-      stock: item.remaining_stock,
-      created_at: item.created_at,
-      updated_at: item.updated_at,
-    }))
+  /**
+   * Search local medicine catalog by name.
+   */
+  async searchMedicines(query: string): Promise<Medicine[]> {
+    if (!query.trim()) return []
+
+    const { data, error } = await supabase
+      .from('medicines')
+      .select('*')
+      .ilike('medicine_name', `%${query.trim()}%`)
+      .order('medicine_name', { ascending: true })
+      .limit(10)
+
+    if (error) throw error
+    return data ?? []
   },
 
+  /**
+   * Get single medicine from catalog by ID.
+   */
   async getMedicineById(id: string): Promise<Medicine> {
-    const item = await prescriptionItemService.getItemById(id)
-    return {
-      id: item.id,
-      medicine_name: item.medicine?.medicine_name ?? 'Unknown Medicine',
-      dosage: item.dosage,
-      meal_type: item.meal_type,
-      food_relation: item.food_relation,
-      custom_time: item.custom_time,
-      stock: item.remaining_stock,
-      created_at: item.created_at,
-      updated_at: item.updated_at,
-    }
+    const { data, error } = await supabase
+      .from('medicines')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (error) throw error
+    return data
   },
 
-  async deleteMedicine(id: string): Promise<void> {
-    await prescriptionItemService.deleteItem(id)
+  /**
+   * Create a new medicine in the catalog.
+   */
+  async createMedicine(formData: MedicineCatalogFormData): Promise<Medicine> {
+    const { data, error } = await supabase
+      .from('medicines')
+      .insert({
+        medicine_name: formData.medicine_name.trim(),
+        generic_name: formData.generic_name?.trim() ?? null,
+        brand_name: formData.brand_name?.trim() ?? null,
+        strength: formData.strength?.trim() ?? null,
+        dosage_form: formData.dosage_form?.trim() ?? null,
+        manufacturer: formData.manufacturer?.trim() ?? null,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
   },
 }
