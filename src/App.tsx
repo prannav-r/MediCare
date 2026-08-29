@@ -24,6 +24,9 @@ import { PrescriptionDetailsPage } from '@/pages/PrescriptionDetails'
 import { AddPrescriptionItemPage } from '@/pages/AddPrescriptionItem'
 import { EditPrescriptionItemPage } from '@/pages/EditPrescriptionItem'
 
+// Inventory Page
+import { InventoryPage } from '@/pages/Inventory'
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -76,6 +79,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <CalendarPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventory"
+              element={
+                <ProtectedRoute>
+                  <InventoryPage />
                 </ProtectedRoute>
               }
             />

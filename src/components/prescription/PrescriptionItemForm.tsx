@@ -4,7 +4,7 @@
 // Features simple Morning/Afternoon/Evening checkboxes and current inventory input.
 // ============================================================
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { prescriptionItemSchema, type PrescriptionItemFormData } from '@/schemas'
@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
+import { useAuth } from '@/contexts/AuthContext'
+import { useInventoryItem } from '@/hooks/useInventory'
 
 interface PrescriptionItemFormProps {
   defaultValues?: Partial<PrescriptionItemFormData>
@@ -49,7 +51,20 @@ export function PrescriptionItemForm({
     },
   })
 
+  const { user } = useAuth()
   const watchMedId = watch('medicine_id')
+  
+  // Fetch existing inventory for the selected medicine
+  const { data: inventoryItem } = useInventoryItem(user?.id, watchMedId || undefined)
+
+  useEffect(() => {
+    // When the user selects a new medicine that they already have inventory for,
+    // we want to pre-fill the current_doses field. 
+    if (inventoryItem) {
+      setValue('current_doses', inventoryItem.current_doses, { shouldValidate: true })
+    }
+  }, [inventoryItem, setValue])
+
   const watchMorning = watch('morning')
   const watchAfternoon = watch('afternoon')
   const watchEvening = watch('evening')
@@ -57,6 +72,10 @@ export function PrescriptionItemForm({
   const handleSelectMedicine = (med: Medicine) => {
     setValue('medicine_id', med.id, { shouldValidate: true })
     setSelectedMedName(med.medicine_name)
+    
+    // Reset doses to 0 immediately when a medicine is selected, 
+    // it will be populated if inventoryItem is found in the effect above
+    setValue('current_doses', 0, { shouldValidate: true })
   }
 
   return (

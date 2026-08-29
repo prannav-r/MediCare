@@ -35,9 +35,27 @@ export function useSetInventory() {
   return useMutation({
     mutationFn: ({ userId, medicineId, currentDoses }: { userId: string; medicineId: string; currentDoses: number }) =>
       inventoryService.setInventory(userId, medicineId, currentDoses),
-    onSuccess: (_, variables) => {
-      void queryClient.invalidateQueries({ queryKey: inventoryKeys.byUser(variables.userId) })
-      void queryClient.invalidateQueries({ queryKey: inventoryKeys.byMedicine(variables.userId, variables.medicineId) })
+    onSuccess: (data, variables) => {
+      // Instantly update the single item cache
+      queryClient.setQueryData(inventoryKeys.byMedicine(variables.userId, variables.medicineId), data)
+      
+      // Instantly update the list cache
+      queryClient.setQueryData(
+        inventoryKeys.byUser(variables.userId),
+        (oldData: MedicineInventoryWithMedicine[] | undefined) => {
+          if (!oldData) return oldData
+          
+          return oldData.map((item) => {
+            if (item.medicine_id === variables.medicineId) {
+              return { ...item, current_doses: variables.currentDoses }
+            }
+            return item
+          })
+        }
+      )
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: inventoryKeys.all })
     },
   })
 }

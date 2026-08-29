@@ -16,6 +16,7 @@ const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/prescriptions', label: 'Prescriptions', icon: FileText },
   { to: '/calendar', label: 'Calendar', icon: Calendar },
+  { to: '/inventory', label: 'Inventory', icon: Pill },
 ]
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
