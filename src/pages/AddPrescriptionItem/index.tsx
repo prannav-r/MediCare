@@ -43,7 +43,8 @@ export function AddPrescriptionItemPage() {
         prescription.end_date,
         formData.morning,
         formData.afternoon,
-        formData.evening
+        formData.evening,
+        formData.quantity_per_dose
       )
 
       // Set inventory level (since inventory is cross-prescription, this overwrites it for the user+medicine)

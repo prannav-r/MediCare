@@ -47,6 +47,7 @@ export function PrescriptionItemForm({
       morning: defaultValues?.morning ?? false,
       afternoon: defaultValues?.afternoon ?? false,
       evening: defaultValues?.evening ?? false,
+      quantity_per_dose: defaultValues?.quantity_per_dose ?? 1,
       current_doses: defaultValues?.current_doses ?? 0,
     },
   })
@@ -126,6 +127,24 @@ export function PrescriptionItemForm({
         {errors.evening && (
           <p className="text-xs text-destructive">{errors.evening.message}</p>
         )}
+      </div>
+
+      {/* Dose Quantity */}
+      <div className="space-y-1.5 max-w-sm">
+        <Label htmlFor="quantity_per_dose">Quantity Per Dose *</Label>
+        <Input
+          type="number"
+          id="quantity_per_dose"
+          step="0.01"
+          min={0.01}
+          {...register('quantity_per_dose', { valueAsNumber: true })}
+        />
+        {errors.quantity_per_dose && (
+          <p className="text-xs text-destructive">{errors.quantity_per_dose.message}</p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Enter how many units/tablets are taken in a single dose (e.g., 1 or 0.5).
+        </p>
       </div>
 
       {/* Inventory */}

@@ -45,7 +45,8 @@ export function DashboardPage() {
         item.prescription.end_date,
         item.morning,
         item.afternoon,
-        item.evening
+        item.evening,
+        item.quantity_per_dose
       )
 
       const status = getInventoryStatus(currentDoses, item.total_required_doses, consumed)

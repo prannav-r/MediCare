@@ -59,6 +59,7 @@ export interface PrescriptionItem {
   morning: boolean
   afternoon: boolean
   evening: boolean
+  quantity_per_dose: number
   total_required_doses: number
   created_at: string
   updated_at: string

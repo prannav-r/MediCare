@@ -62,6 +62,7 @@ export const prescriptionItemService = {
       morning: formData.morning,
       afternoon: formData.afternoon,
       evening: formData.evening,
+      quantity_per_dose: formData.quantity_per_dose,
       total_required_doses: totalRequiredDoses,
     }
 
@@ -90,6 +91,7 @@ export const prescriptionItemService = {
       morning: formData.morning,
       afternoon: formData.afternoon,
       evening: formData.evening,
+      quantity_per_dose: formData.quantity_per_dose,
       total_required_doses: totalRequiredDoses,
     }
 

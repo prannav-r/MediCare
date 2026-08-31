@@ -16,6 +16,7 @@
 -- ============================================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pg_cron";
 
 -- Drop legacy types if they exist to clean up the DB
 DO $$ BEGIN DROP TYPE IF EXISTS prescription_status_enum CASCADE; EXCEPTION WHEN OTHERS THEN NULL; END $$;
@@ -99,7 +100,8 @@ CREATE TABLE IF NOT EXISTS public.prescription_items (
   morning              BOOLEAN NOT NULL DEFAULT false,
   afternoon            BOOLEAN NOT NULL DEFAULT false,
   evening              BOOLEAN NOT NULL DEFAULT false,
-  total_required_doses INTEGER NOT NULL DEFAULT 0 CHECK (total_required_doses >= 0),
+  quantity_per_dose    NUMERIC(10, 2) NOT NULL DEFAULT 1 CHECK (quantity_per_dose > 0),
+  total_required_doses NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (total_required_doses >= 0),
   created_at           TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   updated_at           TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
@@ -110,7 +112,7 @@ CREATE TABLE IF NOT EXISTS public.medicine_inventory (
   id            UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id       UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   medicine_id   UUID NOT NULL REFERENCES public.medicines(id) ON DELETE CASCADE,
-  current_doses INTEGER NOT NULL DEFAULT 0 CHECK (current_doses >= 0),
+  current_doses NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (current_doses >= 0),
   created_at    TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   updated_at    TIMESTAMPTZ DEFAULT NOW() NOT NULL,
 
@@ -265,6 +267,65 @@ CREATE POLICY "Users can view own medicine inventory"   ON public.medicine_inven
 CREATE POLICY "Users can insert own medicine inventory" ON public.medicine_inventory FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own medicine inventory" ON public.medicine_inventory FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can delete own medicine inventory" ON public.medicine_inventory FOR DELETE USING (auth.uid() = user_id);
+
+-- ============================================================================
+-- 9. Cron Job for Automatic Daily Inventory Decrement
+-- ============================================================================
+-- Function to decrement doses for all active prescriptions for the day
+CREATE OR REPLACE FUNCTION public.decrement_daily_doses()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  today DATE := CURRENT_DATE;
+  rec RECORD;
+  doses_taken NUMERIC(10,2);
+BEGIN
+  -- Loop through all active prescription items for today
+  FOR rec IN
+    SELECT 
+      p.user_id,
+      pi.medicine_id,
+      pi.morning,
+      pi.afternoon,
+      pi.evening,
+      pi.quantity_per_dose
+    FROM public.prescription_items pi
+    JOIN public.prescriptions p ON p.id = pi.prescription_id
+    WHERE p.start_date <= today AND p.end_date >= today
+  LOOP
+    -- Calculate how many doses were taken today for this item
+    doses_taken := 0;
+    IF rec.morning THEN doses_taken := doses_taken + 1; END IF;
+    IF rec.afternoon THEN doses_taken := doses_taken + 1; END IF;
+    IF rec.evening THEN doses_taken := doses_taken + 1; END IF;
+    doses_taken := doses_taken * rec.quantity_per_dose;
+
+    IF doses_taken > 0 THEN
+      -- Decrement the physical inventory, ensuring it doesn't drop below 0
+      UPDATE public.medicine_inventory
+      SET current_doses = GREATEST(0, current_doses - doses_taken),
+          updated_at = NOW()
+      WHERE user_id = rec.user_id AND medicine_id = rec.medicine_id;
+    END IF;
+  END LOOP;
+END;
+$$;
+
+-- Schedule the cron job to run daily at 22:00 (10:00 PM) UTC. 
+-- Note: pg_cron uses UTC time. 
+DO $$ 
+BEGIN
+  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'decrement-doses-nightly') THEN
+    PERFORM cron.unschedule('decrement-doses-nightly');
+  END IF;
+EXCEPTION
+  WHEN OTHERS THEN
+    NULL;
+END $$;
+
+SELECT cron.schedule('decrement-doses-nightly', '0 22 * * *', 'SELECT public.decrement_daily_doses()');
 
 -- ============================================================================
 -- End of MVP 3 Setup Script

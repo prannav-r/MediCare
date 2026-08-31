@@ -27,7 +27,8 @@ export function calculateRequiredDoses(
   endDateStr: string,
   morning: boolean,
   afternoon: boolean,
-  evening: boolean
+  evening: boolean,
+  quantityPerDose: number = 1
 ): DoseCalculationResult {
   const start = parseLocalDate(startDateStr)
   const end = parseLocalDate(endDateStr)
@@ -36,7 +37,8 @@ export function calculateRequiredDoses(
   const durationMs = end.getTime() - start.getTime()
   const durationDays = Math.max(0, Math.floor(durationMs / (1000 * 60 * 60 * 24))) + 1
   
-  const dosesPerDay = (morning ? 1 : 0) + (afternoon ? 1 : 0) + (evening ? 1 : 0)
+  const doseTimesPerDay = (morning ? 1 : 0) + (afternoon ? 1 : 0) + (evening ? 1 : 0)
+  const dosesPerDay = doseTimesPerDay * quantityPerDose
   const totalRequired = durationDays * dosesPerDay
   
   return {
@@ -54,7 +56,8 @@ export function calculateConsumedDoses(
   endDateStr: string,
   morning: boolean,
   afternoon: boolean,
-  evening: boolean
+  evening: boolean,
+  quantityPerDose: number = 1
 ): number {
   const now = new Date()
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
@@ -72,11 +75,11 @@ export function calculateConsumedDoses(
   const effectiveEnd = now.getTime() > end.getTime() + (24 * 60 * 60 * 1000 - 1) ? end : today
 
   // Calculate full days passed entirely
-  // Ex: if start is 1st and today is 3rd, there are 2 full days passed (1st and 2nd)
   const fullDaysMs = effectiveEnd.getTime() - start.getTime()
   const fullDaysPassed = Math.max(0, Math.floor(fullDaysMs / (1000 * 60 * 60 * 24)))
   
-  const dosesPerDay = (morning ? 1 : 0) + (afternoon ? 1 : 0) + (evening ? 1 : 0)
+  const doseTimesPerDay = (morning ? 1 : 0) + (afternoon ? 1 : 0) + (evening ? 1 : 0)
+  const dosesPerDay = doseTimesPerDay * quantityPerDose
   let consumed = fullDaysPassed * dosesPerDay
 
   // If the prescription is still ongoing today (and today is <= end date),
@@ -85,13 +88,13 @@ export function calculateConsumedDoses(
     const currentHourMinute = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 
     if (morning && currentHourMinute >= FIXED_SCHEDULE.morning) {
-      consumed += 1
+      consumed += quantityPerDose
     }
     if (afternoon && currentHourMinute >= FIXED_SCHEDULE.afternoon) {
-      consumed += 1
+      consumed += quantityPerDose
     }
     if (evening && currentHourMinute >= FIXED_SCHEDULE.evening) {
-      consumed += 1
+      consumed += quantityPerDose
     }
   }
 

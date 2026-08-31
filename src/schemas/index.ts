@@ -103,9 +103,12 @@ export const prescriptionItemSchema = z
     morning: z.boolean().default(false),
     afternoon: z.boolean().default(false),
     evening: z.boolean().default(false),
+    quantity_per_dose: z
+      .coerce.number()
+      .min(0.01, 'Quantity per dose must be greater than 0')
+      .default(1),
     current_doses: z
       .coerce.number()
-      .int()
       .min(0, 'Inventory cannot be negative'),
   })
   .refine(

@@ -45,7 +45,8 @@ export function EditPrescriptionItemPage() {
         prescription.end_date,
         formData.morning,
         formData.afternoon,
-        formData.evening
+        formData.evening,
+        formData.quantity_per_dose
       )
 
       await setInventory({
@@ -96,6 +97,7 @@ export function EditPrescriptionItemPage() {
                 morning: item.morning,
                 afternoon: item.afternoon,
                 evening: item.evening,
+                quantity_per_dose: item.quantity_per_dose,
                 current_doses: inventoryItem?.current_doses ?? 0,
               }}
               defaultMedicineName={item.medicine?.medicine_name}
